@@ -1,0 +1,15 @@
+package br.com.fiap.am.ltp.bo;
+
+import java.sql.Connection;
+import java.util.List;
+
+import br.com.fiap.am.ltp.beans.Advogado;
+import br.com.fiap.am.ltp.dao.AdvogadoDAO;
+
+public abstract class AdvogadoBO {
+	static AdvogadoDAO dao = new AdvogadoDAO();
+	
+	public static List<Advogado> listaAdvogado(Connection c, int numOAB) throws Exception{
+		return dao.listarAdvogados(c, numOAB);
+	}
+}
