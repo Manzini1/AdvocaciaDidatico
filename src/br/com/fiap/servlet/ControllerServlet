@@ -1,0 +1,215 @@
+package br.com.fiap.am.ltp.servlet;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import br.com.fiap.am.ltp.beans.Despesa;
+import br.com.fiap.am.ltp.beans.Processo;
+import br.com.fiap.am.ltp.beans.TipoDepesas;
+import br.com.fiap.am.ltp.bo.LancaDespesaBO;
+import br.com.fiap.am.ltp.conexao.ConexaoFactory;
+
+@WebServlet("/Controller")
+public class ControllerServlet extends HttpServlet {
+	// String endereco =
+	// getServletContext().getContext("/error404").getRealPath("/");
+
+	static Connection c = null;
+
+	@Override
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+			throws ServletException, IOException {
+
+		try {
+			c = ConexaoFactory.controlarInstancia().getConnection(null, null);
+			int numProcesso = Integer.parseInt(req.getParameter("num"));
+			req.setAttribute("numProcesso", numProcesso);
+			
+			int numOAB = Integer.parseInt(req.getParameter("numOAB"));
+			req.setAttribute("numOAB", numOAB);
+			String acao = req.getParameter("acao");
+			
+			
+			
+			switch (acao) {
+			case "deletar":
+				deletar(req);
+				listarDespesas(req);
+				listarTipoDespesa(req);
+				break;
+			case "cadastrar" :
+				cadastrarDespesa(req);
+				listarDespesas(req);
+				listarTipoDespesa(req);
+			
+			break;
+
+			}
+			req.getRequestDispatcher("Despesa.jsp").forward(req, resp);
+
+		} catch (Exception e) {
+			req.setAttribute("error", e.getMessage());
+		} finally {
+			try {
+				c.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+			throws ServletException, IOException {
+		try {
+			c = ConexaoFactory.controlarInstancia().getConnection(null, null);
+
+			int numOAB = Integer.parseInt(req.getParameter("numOAB"));
+			req.setAttribute("numOAB", numOAB);
+			String acao = req.getParameter("acao");
+			String retorno = "";
+			switch (acao) {
+			case "listar":
+				listarTipoDespesa(req);
+				listarDespesas(req);
+				retorno = "Despesa.jsp";
+				break;
+
+			}
+
+			req.getRequestDispatcher(retorno).forward(req, resp);
+
+			/*
+			 * int numProcesso = Integer.parseInt(req.getParameter("num"));
+			 * 
+			 * // Listar tipo despesa List<TipoDepesas> lstTipoDespesas = new
+			 * ArrayList<TipoDepesas>(); lstTipoDespesas =
+			 * LancaDespesaBO.listarTipoDespesas(c);
+			 * 
+			 * req.setAttribute("TipoDespesas", lstTipoDespesas);
+			 * 
+			 * // Listar Despesas List<Despesa> lstDespesa = new
+			 * ArrayList<Despesa>(); lstDespesa =
+			 * LancaDespesaBO.listarDespesas(c, numProcesso);
+			 * 
+			 * req.setAttribute("despesas", lstDespesa);
+			 * 
+			 * 
+			 * // Passar o numero do processo para o jsp
+			 * req.setAttribute("numProcesso", numProcesso);
+			 * 
+			 * listarDespesas(req);
+			 * 
+			 * 
+			 * 
+			 * } catch (Exception e) { e.printStackTrace();
+			 * req.setAttribute("error", e.getMessage()); }
+			 * 
+			 * req.getRequestDispatcher("Despesa.jsp").forward(req, resp);
+			 */
+		} catch (Exception e) {
+			e.printStackTrace();
+			req.setAttribute("error", e.getMessage());
+		} finally {
+			try {
+				c.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void listarTipoDespesa(HttpServletRequest req) {
+		try {
+
+			List<TipoDepesas> lstTipoDespesas = new ArrayList<TipoDepesas>();
+			lstTipoDespesas = LancaDespesaBO.listarTipoDespesas(c);
+
+			req.setAttribute("TipoDespesas", lstTipoDespesas);
+		} catch (Exception e) {
+			e.printStackTrace();
+			req.setAttribute("error", e.getMessage());
+		}
+
+	}
+
+	public void listarDespesas(HttpServletRequest req) {
+		try {
+			int numProcesso = Integer.parseInt(req.getParameter("num"));
+			List<Despesa> lstDespesa = new ArrayList<Despesa>();
+			lstDespesa = LancaDespesaBO.listarDespesas(c, numProcesso);
+
+			req.setAttribute("despesas", lstDespesa);
+			// Passar o numero do processo para o jsp
+			req.setAttribute("numProcesso", numProcesso);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			req.setAttribute("error", e.getMessage());
+		}
+	}
+
+	public void deletar(HttpServletRequest req) {
+		try {
+			int codLancamento = Integer.parseInt(req
+					.getParameter("codLancamento"));
+			LancaDespesaBO.deletarDespesa(c, codLancamento);
+
+			req.setAttribute("msg", "Despesa deletada com sucesso !");
+		} catch (Exception e) {
+			e.printStackTrace();
+			req.setAttribute("error", e.getMessage());
+		}
+
+	}
+	
+	public void cadastrarDespesa(HttpServletRequest request) throws Exception{
+		try{
+		
+			int numProcesso = Integer.parseInt(request.getParameter("num"));
+			request.setAttribute("numProcesso", numProcesso);
+			
+			
+			int numOAB = Integer.parseInt(request.getParameter("numOAB"));
+			request.setAttribute("numOAB", numOAB);
+			
+			
+		String mesValidado = request.getParameter("dtOcorreDespesa");
+		mesValidado = mesValidado.trim().substring(5, 7);
+		
+		
+		TipoDepesas tp = new TipoDepesas();
+		tp.setCodigoDespesa(Integer.parseInt(request.getParameter("slcDespesa")));
+		
+		Processo p = new Processo();
+		p.setNumProcesso(Integer.parseInt(request.getParameter("num")));
+		
+		
+		Despesa d = new Despesa();
+		d.setTipoDespesa(tp);
+		d.setNrProcesso(p);
+		d.setDtDespesa(request.getParameter("dtOcorreDespesa"));
+		d.setValor(Float.parseFloat(request.getParameter("txtValor")));
+		d.setObservacao(request.getParameter("txtHObs"));
+		
+		
+		LancaDespesaBO.cadastrarDespesa(c, d, mesValidado);
+		
+		request.setAttribute("msg", "Cadastrado com sucesso!");
+		
+		}catch(Exception e){
+			e.printStackTrace();
+			request.setAttribute("error", e.getMessage());
+		}
+		
+	}
+}
